@@ -1,0 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+export function ticket(value:Record<string,unknown>){const body=Buffer.from(JSON.stringify({...value,expires:Date.now()+2*3600000})).toString("base64url");return body+"."+signature(body);}
+function signature(value:string){const secret=process.env.NORTHSTAR_SESSION_SECRET;if(!secret||secret.length<32)throw new Error("Session secret is not configured.");return createHmac("sha256",secret).update("upload:"+value).digest("base64url");}
+export function readTicket(value:string){const [body,sig,...rest]=value.split(".");if(!body||!sig||rest.length)throw new Error("Invalid upload ticket.");const a=Buffer.from(signature(body)),b=Buffer.from(sig);if(a.length!==b.length||!timingSafeEqual(a,b))throw new Error("Invalid upload ticket.");const data=JSON.parse(Buffer.from(body,"base64url").toString());if(data.expires<Date.now())throw new Error("Upload ticket expired.");return data;}

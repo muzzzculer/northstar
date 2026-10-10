@@ -1,0 +1,5 @@
+export function supabaseURL(){const url=process.env.SUPABASE_URL;if(!url)throw new Error("Supabase is not configured.");return url.replace(/\/$/,"");}
+export function adminHeaders(){const key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!key)throw new Error("Storage is not configured.");return {apikey:key,Authorization:"Bearer "+key};}
+export function storagePath(key:string){return "/storage/v1/object/"+encodeURIComponent(process.env.SUPABASE_STORAGE_BUCKET??"northstar")+"/"+key.split("/").map(encodeURIComponent).join("/");}
+export async function storageRequest(path:string,init:RequestInit={}){return fetch(supabaseURL()+path,{...init,headers:{...adminHeaders(),...init.headers},cache:"no-store"});}
+export async function signedDownload(key:string){const response=await storageRequest(storagePath(key).replace("/object/","/object/sign/"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({expiresIn:3600})});const data=await response.json();if(!response.ok||!data.signedURL)throw new Error("Audio storage is unavailable.");return supabaseURL()+"/storage/v1"+data.signedURL;}
